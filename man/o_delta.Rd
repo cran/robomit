@@ -2,37 +2,39 @@
 % Please edit documentation in R/robomit_functions.R
 \name{o_delta}
 \alias{o_delta}
-\title{Delta*}
+\title{delta*}
 \usage{
-o_delta(y, x, con, id = "none", time = "none", beta = 0, R2max, type, data)
+o_delta(y, x, con, m = "none", id = "none", time = "none", beta = 0, R2max, type, data)
 }
 \arguments{
 \item{y}{Name of the dependent variable (as string).}
 
-\item{x}{Name of the independent variable of interest (treatment variable; as string).}
+\item{x}{Name of the independent treatment variable (i.e. variable of interest; as string).}
 
 \item{con}{Name of the other control variables. Provided as string in the format: "w + z +...".}
 
-\item{id}{Name of the individual id variable (e.g. firm or farm; as string). Only applicable for fixed effect models.}
+\item{m}{Name of unrelated control variables (m; see Oster 2019; as string; default m = "none").}
 
-\item{time}{Name of the time variable (e.g. year or month; as string). Only applicable for fixed effect models.}
+\item{id}{Name of the individual id variable (e.g. firm or farm; as string). Only applicable for fixed effect panel models.}
 
-\item{beta}{Beta for which delta* should be estimated (default is beta = 0).}
+\item{time}{Name of the time variable (e.g. year or month; as string). Only applicable for fixed effect panel models.}
 
-\item{R2max}{Max R-square for which beta* should be estimated.}
+\item{beta}{beta for which delta* should be estimated (default is beta = 0).}
+
+\item{R2max}{Maximum R-square for which beta* should be estimated.}
 
 \item{type}{Model type (either \emph{lm} or \emph{plm}; as string).}
 
-\item{data}{Data.}
+\item{data}{Dataset.}
 }
 \value{
-Returns tibble object. Including delta* and various other information.
+Returns tibble object, which includes delta* and various other information.
 }
 \description{
-Estimates delta*, i.e. the degree of selection on unobservables relative to observables that would be necessary to explain away the result, following Oster (2019).
+Estimates delta*, i.e. the degree of selection on unobservables relative to observables (with respect to the treatment variable) that would be necessary to eliminate the result (following Oster 2019).
 }
 \details{
-Estimates delta*, i.e. the degree of selection on unobservables relative to observables that would be necessary to explain away the result, following Oster (2019). The function supports linear cross sectional (see \emph{lm} objects in R) and panel fixed effect (see \emph{plm} objects in R) models.
+Estimates delta*, i.e. the degree of selection on unobservables relative to observables (with respect to the treatment variable) that would be necessary to eliminate the result (following Oster 2019). The function supports linear cross sectional (see \emph{lm} objects in R) and fixed effect panel (see \emph{plm} objects in R) models.
 }
 \examples{
 # load data, e.g. the in-build mtcars dataset
@@ -46,13 +48,13 @@ head(data_oster)
 require(robomit)
 
 # estimate delta*
-o_delta(y = "mpg",               # define the dependent variable name
-            x = "wt",            # define the main independent variable name
-            con = "hp + qsec",   # other control variables
-            beta = 0,            # define beta. This is usually set to 0
-            R2max = 0.9,         # define the max R-square.
-            type = "lm",         # define model type
-            data = data_oster)   # define dataset
+o_delta(y = "mpg",           # dependent variable
+        x = "wt",            # independent treatment variable
+        con = "hp + qsec",   # other control variables
+        beta = 0,            # beta
+        R2max = 0.9,         # maximum R-square
+        type = "lm",         # model type
+        data = data_oster)   # dataset
 }
 \references{
 Oster, E. (2019). Unobservable selection and coefficient stability: Theory and evidence. Journal of Business & Economic Statistics, 37, 187-204.
