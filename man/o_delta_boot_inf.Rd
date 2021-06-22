@@ -4,25 +4,27 @@
 \alias{o_delta_boot_inf}
 \title{Bootstrapped mean delta* and confidence intervals}
 \usage{
-o_delta_boot_inf(y, x, con, m = "none", id = "none", time = "none",
+o_delta_boot_inf(y, x, con, m = "none", w = NULL, id = "none", time = "none",
 beta = 0, R2max, sim, obs, rep, CI, type, useed = NA, data)
 }
 \arguments{
 \item{y}{Name of the dependent variable (as string).}
 
-\item{x}{Name of the independent treatment variable (i.e. variable of interest; as string).}
+\item{x}{Name of the independent treatment variable (i.e., variable of interest; as string).}
 
-\item{con}{Name of the other control variables. Provided as string in the format: "w + z +...".}
+\item{con}{Name of related control variables. Provided as string in the format: "w + z +...".}
 
-\item{m}{Name of unrelated control variables (m; see Oster 2019; as string; default m = "none").}
+\item{m}{Name of unrelated control variables (m; see Oster 2019; as string; default is m = "none").}
+
+\item{w}{weights (only for weighted estimations). Warning: For weighted panel models R can report different R-square than Stata, leading deviation between R and Stata results.}
 
 \item{id}{Name of the individual id variable (e.g. firm or farm; as string). Only applicable for fixed effect panel models.}
 
-\item{time}{Name of the time variable (e.g. year or month; as string). Only applicable for fixed effect panel models.}
+\item{time}{Name of the time id variable (e.g. year or month; as string). Only applicable for fixed effect panel models.}
 
-\item{beta}{beta for which delta* should be estimated (default is beta = 0)..}
+\item{beta}{beta for which delta*s should be estimated (default is beta = 0)..}
 
-\item{R2max}{Maximum R-square for which beta* should be estimated.}
+\item{R2max}{Maximum R-square for which delta*s should be estimated.}
 
 \item{sim}{Number of simulations.}
 
@@ -42,10 +44,10 @@ beta = 0, R2max, sim, obs, rep, CI, type, useed = NA, data)
 Returns tibble object, which includes the mean and confidence intervals of bootstrapped delta*s.
 }
 \description{
-Provides the mean and confidence intervals of bootstrapped delta*s, i.e. the degree of selection on unobservables relative to observables (with respect to the treatment variable) that would be necessary to eliminate the result (following Oster 2019).
+Provides the mean and confidence intervals of bootstrapped delta*s, i.e., the degree of selection on unobservables relative to observables (with respect to the treatment variable) that would be necessary to eliminate the result (following Oster 2019).
 }
 \details{
-Provides the mean and confidence intervals of bootstrapped delta*s, i.e. the degree of selection on unobservables relative to observables (with respect to the treatment variable) that would be necessary to eliminate the result (following Oster 2019). Bootstrapping can either be done with or without replacement. The function supports linear cross sectional (see \emph{lm} objects in R) and fixed effect panel (see \emph{plm} objects in R) models.
+Provides the mean and confidence intervals of bootstrapped delta*s, i.e., the degree of selection on unobservables relative to observables (with respect to the treatment variable) that would be necessary to eliminate the result (following Oster 2019). Bootstrapping can either be done with or without replacement. The function supports linear cross-sectional (see \emph{lm} objects in R) and fixed effect panel (see \emph{plm} objects in R) models.
 }
 \examples{
 # load data, e.g. the in-build mtcars dataset
@@ -61,7 +63,7 @@ require(robomit)
 # compute the mean and confidence intervals of estimated bootstrapped delta*s
 o_delta_boot_inf(y = "mpg",            # dependent variable
                  x = "wt",             # independent treatment variable
-                 con = "hp + qsec",    # other control variables
+                 con = "hp + qsec",    # related control variables
                  beta = 0,             # beta
                  R2max = 0.9,          # maximum R-square
                  sim = 100,            # number of simulations
@@ -73,5 +75,5 @@ o_delta_boot_inf(y = "mpg",            # dependent variable
                  data = data_oster)    # dataset
 }
 \references{
-Oster, E. (2019). Unobservable selection and coefficient stability: Theory and evidence. Journal of Business & Economic Statistics, 37, 187-204.
+Oster, E. (2019). Unobservable Selection and Coefficient Stability: Theory and Evidence. Journal of Business & Economic Statistics, 37, 187-204.
 }

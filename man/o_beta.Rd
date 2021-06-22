@@ -4,21 +4,23 @@
 \alias{o_beta}
 \title{beta*}
 \usage{
-o_beta(y, x, con, m = "none", id = "none", time = "none", delta = 1,
+o_beta(y, x, con, m = "none", w = NULL, id = "none", time = "none", delta = 1,
 R2max, type, data)
 }
 \arguments{
 \item{y}{Name of the dependent variable (as string).}
 
-\item{x}{Name of the independent treatment variable (i.e. variable of interest; as string).}
+\item{x}{Name of the independent treatment variable (i.e., variable of interest; as string).}
 
-\item{con}{Name of the other control variables. Provided as string in the format: "w + z +...".}
+\item{con}{Name of related control variables. Provided as string in the format: "w + z +...".}
 
-\item{m}{Name of unrelated control variables (m; see Oster 2019; as string; default m = "none").}
+\item{m}{Name of unrelated control variables (m; see Oster 2019; as string; default is m = "none").}
+
+\item{w}{weights (only for weighted estimations). Warning: For weighted panel models R can report different R-square than Stata, leading deviation between R and Stata results.}
 
 \item{id}{Name of the individual id variable (e.g. firm or farm; as string). Only applicable for fixed effect panel models.}
 
-\item{time}{Name of the time variable (e.g. year or month; as string). Only applicable for fixed effect panel models.}
+\item{time}{Name of the time id variable (e.g. year or month; as string). Only applicable for fixed effect panel models.}
 
 \item{delta}{delta for which beta* should be estimated (default is delta = 1).}
 
@@ -32,10 +34,10 @@ R2max, type, data)
 Returns tibble object, which includes beta* and various other information.
 }
 \description{
-Estimates beta*, i.e. the bias-adjusted treatment effect (or correlation) (following Oster 2019).
+Estimates beta*, i.e., the bias-adjusted treatment effect (or correlation) (following Oster 2019).
 }
 \details{
-Estimates beta*, i.e. the bias-adjusted treatment effect (or correlation).
+Estimates beta*, i.e., the bias-adjusted treatment effect (or correlation).
 }
 \examples{
 # load data, e.g. the in-build mtcars dataset
@@ -51,12 +53,12 @@ require(robomit)
 # estimate beta*
 o_beta(y = "mpg",           # dependent variable
        x = "wt",            # independent treatment variable
-       con = "hp + qsec",   # other control variables
+       con = "hp + qsec",   # related control variables
        delta = 1,           # delta
        R2max = 0.9,         # maximum R-square
        type = "lm",         # model type
        data = data_oster)   # dataset
 }
 \references{
-Oster, E. (2019) Unobservable selection and coefficient stability: Theory and evidence. Journal of Business & Economic Statistics, 37, 187-204.
+Oster, E. (2019) Unobservable Selection and Coefficient Stability: Theory and Evidence. Journal of Business & Economic Statistics, 37, 187-204.
 }
