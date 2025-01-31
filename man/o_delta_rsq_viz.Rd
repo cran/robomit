@@ -4,7 +4,7 @@
 \alias{o_delta_rsq_viz}
 \title{Visualization of delta*s over a range of maximum R-squares}
 \usage{
-o_delta_rsq_viz(y, x, con, m = "none", w = NULL, id = "none", time = "none", beta = 0,
+o_delta_rsq_viz(y, x, con, w = NULL, id = "none", time = "none", beta = 0,
 type, data)
 }
 \arguments{
@@ -13,8 +13,6 @@ type, data)
 \item{x}{Name of the independent treatment variable (i.e., variable of interest; as string).}
 
 \item{con}{Name of related control variables. Provided as string in the format: "w + z +...".}
-
-\item{m}{Name of unrelated control variables (m; see Oster 2019; as string; default is m = "none").}
 
 \item{w}{weights (only for weighted estimations). Warning: For weighted panel models R can report different R-square than Stata, leading deviation between R and Stata results.}
 

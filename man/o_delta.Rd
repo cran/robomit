@@ -4,7 +4,7 @@
 \alias{o_delta}
 \title{delta*}
 \usage{
-o_delta(y, x, con, m = "none", w = NULL, id = "none", time = "none", beta = 0, R2max,
+o_delta(y, x, con, w = NULL, id = "none", time = "none", beta = 0, R2max,
 type, data)
 }
 \arguments{
@@ -13,8 +13,6 @@ type, data)
 \item{x}{Name of the independent treatment variable (i.e., variable of interest; as string).}
 
 \item{con}{Name of related control variables. Provided as string in the format: "w + z +...".}
-
-\item{m}{Name of unrelated control variables (m; see Oster 2019; as string; default is m = "none").}
 
 \item{w}{weights (only for weighted estimations). Warning: For weighted panel models R can report different R-square than Stata, leading deviation between R and Stata results.}
 
@@ -34,7 +32,7 @@ type, data)
 Returns tibble object, which includes delta* and various other information.
 }
 \description{
-Estimates delta*, i.e., the degree of selection on unobservables relative to observables (with respect to the treatment variable) that would be necessary to eliminate the result (following Oster 2019).
+Estimates delta*, i.e., the degree of selection on unobservables relative to observables (with respect to the treatment variable) that would be necessary to eliminate the result (following Oster 2019). The code is based on the psacalc command in Stata.
 }
 \details{
 Estimates delta*, i.e., the degree of selection on unobservables relative to observables (with respect to the treatment variable) that would be necessary to eliminate the result (following Oster 2019). The function supports linear cross-sectional (see \emph{lm} objects in R) and fixed effect panel (see \emph{plm} objects in R) models.

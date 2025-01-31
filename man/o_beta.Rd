@@ -4,7 +4,7 @@
 \alias{o_beta}
 \title{beta*}
 \usage{
-o_beta(y, x, con, m = "none", w = NULL, id = "none", time = "none", delta = 1,
+o_beta(y, x, con, w = NULL, id = "none", time = "none", delta = 1,
 R2max, type, data)
 }
 \arguments{
@@ -13,8 +13,6 @@ R2max, type, data)
 \item{x}{Name of the independent treatment variable (i.e., variable of interest; as string).}
 
 \item{con}{Name of related control variables. Provided as string in the format: "w + z +...".}
-
-\item{m}{Name of unrelated control variables (m; see Oster 2019; as string; default is m = "none").}
 
 \item{w}{weights (only for weighted estimations). Warning: For weighted panel models R can report different R-square than Stata, leading deviation between R and Stata results.}
 
@@ -34,7 +32,7 @@ R2max, type, data)
 Returns tibble object, which includes beta* and various other information.
 }
 \description{
-Estimates beta*, i.e., the bias-adjusted treatment effect (or correlation) (following Oster 2019).
+Estimates beta*, i.e., the bias-adjusted treatment effect (or correlation) (following Oster 2019). The code is based on the psacalc command in Stata.
 }
 \details{
 Estimates beta*, i.e., the bias-adjusted treatment effect (or correlation).

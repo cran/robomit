@@ -4,7 +4,7 @@
 \alias{o_delta_boot_inf}
 \title{Bootstrapped mean delta* and confidence intervals}
 \usage{
-o_delta_boot_inf(y, x, con, m = "none", w = NULL, id = "none", time = "none",
+o_delta_boot_inf(y, x, con, w = NULL, id = "none", time = "none",
 beta = 0, R2max, sim, obs, rep, CI, type, useed = NA, data)
 }
 \arguments{
@@ -13,8 +13,6 @@ beta = 0, R2max, sim, obs, rep, CI, type, useed = NA, data)
 \item{x}{Name of the independent treatment variable (i.e., variable of interest; as string).}
 
 \item{con}{Name of related control variables. Provided as string in the format: "w + z +...".}
-
-\item{m}{Name of unrelated control variables (m; see Oster 2019; as string; default is m = "none").}
 
 \item{w}{weights (only for weighted estimations). Warning: For weighted panel models R can report different R-square than Stata, leading deviation between R and Stata results.}
 

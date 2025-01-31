@@ -20,7 +20,7 @@
 #' @import tibble
 #' @importFrom  stats as.formula lm sd var
 
-utils::globalVariables(c("Beta", "..density..", "Rmax","Delta","na.exclude","dnorm","delta","beta","Name","rmax","R21","Value","w_var","data_plm"))
+utils::globalVariables(c("Beta", "..density..", "Rmax", "Delta", "na.exclude", "dnorm", "delta", "beta", "Name", "rmax", "R21", "Value", "w_var", "data_plm"))
 
 # note that parts of the code is based (but not copied) from the psacalc command in Stata, which is licensed under GNU GENERAL PUBLIC LICENSE.
 
@@ -34,13 +34,12 @@ utils::globalVariables(c("Beta", "..density..", "Rmax","Delta","na.exclude","dno
 ##################--------------------------------------------------------------
 #' @title beta*
 #'
-#' @description Estimates beta*, i.e., the bias-adjusted treatment effect (or correlation) (following Oster 2019).
-#' @usage o_beta(y, x, con, m = "none", w = NULL, id = "none", time = "none", delta = 1,
+#' @description Estimates beta*, i.e., the bias-adjusted treatment effect (or correlation) (following Oster 2019). The code is based on the psacalc command in Stata.
+#' @usage o_beta(y, x, con, w = NULL, id = "none", time = "none", delta = 1,
 #' R2max, type, data)
 #' @param y Name of the dependent variable (as string).
 #' @param x Name of the independent treatment variable (i.e., variable of interest; as string).
 #' @param con Name of related control variables. Provided as string in the format: "w + z +...".
-#' @param m Name of unrelated control variables (m; see Oster 2019; as string; default is m = "none").
 #' @param w weights (only for weighted estimations). Warning: For weighted panel models R can report different R-square than Stata, leading deviation between R and Stata results.
 #' @param id Name of the individual id variable (e.g. firm or farm; as string). Only applicable for fixed effect panel models.
 #' @param time Name of the time id variable (e.g. year or month; as string). Only applicable for fixed effect panel models.
@@ -73,7 +72,7 @@ utils::globalVariables(c("Beta", "..density..", "Rmax","Delta","na.exclude","dno
 #' @export
 
 
-o_beta <- function(y, x, con, m = "none", w = NULL, id = "none", time = "none", delta = 1 ,R2max, type, data) {
+o_beta <- function(y, x, con, w = NULL, id = "none", time = "none", delta = 1 ,R2max, type, data) {
 
 
 
@@ -94,23 +93,11 @@ o_beta <- function(y, x, con, m = "none", w = NULL, id = "none", time = "none", 
 
 
   # define formulas of the different models
-  ## models without unrelated variables (i.e. m; see Oster 2019)
-  if(m == "none"){
     model0_formula    <- as.formula("y_var ~ x_var")                             # uncontrolled model
     model1_formula    <- as.formula(paste("y_var ~ x_var +",con))                # controlled model
     aux_model_formula <- as.formula(paste("x_var ~",con))                        # auxiliary model
     if (type == "plm") {
       sigma_xx_model_formula <- as.formula(paste("x_var ~ factor(id_var)"))}     # define model to compute sigma_xx when model type is plm
-  } else {
-    ## models with unrelated variables (i.e. m; see Oster 2019)
-    model0_formula    <- as.formula(paste("y_var ~ x_var +", m))                 # uncontrolled model
-    model1_formula    <- as.formula(paste("y_var ~ x_var +",con, "+", m))        # controlled model
-    aux_model_formula <- as.formula(paste("x_var ~",con, "+", m))                # auxiliary model
-    if (type == "lm") {
-      sigma_xx_model_formula <- as.formula(paste("x_var ~ ",m))}                 # if lm model with m: model to obtain sigma_xx
-    if (type == "plm") {
-      sigma_xx_model_formula <- as.formula(paste("x_var ~ factor(id_var) +",m))} # if plm model with m: model to obtain sigma_xx
-  }
 
 
 
@@ -120,7 +107,6 @@ o_beta <- function(y, x, con, m = "none", w = NULL, id = "none", time = "none", 
     model0    <- lm(model0_formula, weights = w_var,    data = data, na.action = na.exclude)                          # uncontrolled model
     model1    <- lm(model1_formula, weights = w_var,    data = data, na.action = na.exclude)                          # controlled model
     aux_model <- lm(aux_model_formula, weights = w_var, data = data, na.action = na.exclude)                          # auxiliary model
-    if(m != "none") {model_xx  <-  lm(sigma_xx_model_formula, weights = w_var, data = data, na.action = na.exclude)}  # model to obtain singa_xx
   }
   ## plm
   if (type == "plm") {
@@ -138,9 +124,8 @@ o_beta <- function(y, x, con, m = "none", w = NULL, id = "none", time = "none", 
   if (type == "lm") {R20 = summary(model0)$r.squared} else if (type == "plm") {R20 = as.numeric(summary(model0)$r.squared[1])}            # R-square uncontrolled model
   if (type == "lm") {R21 = summary(model1)$r.squared} else if (type == "plm") {R21 = as.numeric(summary(model1)$r.squared[1])}            # R-square uncontrolled model
   sigma_yy = var(data$y_var, na.rm = T)                                                                                                   # variance of dependent variable
-  if(m == "none"){
-    if (type == "lm") {sigma_xx = var(data$x_var, na.rm = T)} else if (type == "plm") {sigma_xx =  var(model_xx$residuals)} } else {      # variance of independent variable without m
-      if (type == "lm") {sigma_xx = var(model_xx$residuals)} else if (type == "plm") {sigma_xx =  var(model_xx$residuals)}  }             # variance of independent variable with m
+
+    if (type == "lm") {sigma_xx = var(data$x_var, na.rm = T)} else if (type == "plm") {sigma_xx =  var(model_xx$residuals)}
   t_x  = var(aux_model$residuals)
 
 
@@ -316,12 +301,11 @@ o_beta <- function(y, x, con, m = "none", w = NULL, id = "none", time = "none", 
 #' @title beta*s over a range of maximum R-squares
 #'
 #' @description Estimates beta*s, i.e., the bias-adjusted treatment effects (or correlations) (following Oster 2019) over a range of maximum R-squares.
-#' @usage o_beta_rsq(y, x, con, m = "none", w = NULL, id = "none", time = "none", delta = 1,
+#' @usage o_beta_rsq(y, x, con, w = NULL, id = "none", time = "none", delta = 1,
 #' type, data)
 #' @param y Name of the dependent variable (as string).
 #' @param x Name of the independent treatment variable (i.e., variable of interest; as string).
 #' @param con Name of related control variables. Provided as string in the format: "w + z +...".
-#' @param m Name of unrelated control variables (m; see Oster 2019; as string; default is m = "none").
 #' @param w weights (only for weighted estimations). Warning: For weighted panel models R can report different R-square than Stata, leading deviation between R and Stata results.
 #' @param id Name of the individual id variable (e.g. firm or farm; as string). Only applicable for fixed effect panel models.
 #' @param time Name of the time id variable (e.g. year or month; as string). Only applicable for fixed effect panel models.
@@ -351,7 +335,7 @@ o_beta <- function(y, x, con, m = "none", w = NULL, id = "none", time = "none", 
 #'            data = data_oster)    # dataset
 #' @export
 
-o_beta_rsq <- function(y, x, con, m = "none", w = NULL, id = "none", time = "none", delta = 1, type, data) {
+o_beta_rsq <- function(y, x, con, w = NULL, id = "none", time = "none", delta = 1, type, data) {
 
 
 
@@ -370,10 +354,7 @@ o_beta_rsq <- function(y, x, con, m = "none", w = NULL, id = "none", time = "non
     data_plm_aux <- pdata.frame(data_aux, index=c("id_var","time_var"), drop.index=TRUE, row.names=TRUE)}
 
   ## define uncontrolled model
-  ### models without variables m
-  if(m == "none"){model1_formula    <- as.formula(paste("y_var ~ x_var +",con)) } else { # controlled model
-  ### models with
-  model1_formula    <- as.formula(paste("y_var ~ x_var +",con, "+", m)) }                # controlled model
+  model1_formula    <- as.formula(paste("y_var ~ x_var +",con))
 
   ## run model
   ### lm
@@ -401,7 +382,7 @@ o_beta_rsq <- function(y, x, con, m = "none", w = NULL, id = "none", time = "non
     R2max = seq(r_start:1,by = 0.01)[i] # current max R-square
 
     # call o_delta function
-    beta_results_aux <- o_beta(y = y, x = x, con = con, m = m, id = id, time = time, delta = delta, R2max = R2max, type = type, data = data)
+    beta_results_aux <- o_beta(y = y, x = x, con = con, id = id, time = time, delta = delta, R2max = R2max, type = type, data = data)
 
     # store results
     beta_over_rsq_results[i,2] <- R2max
@@ -421,12 +402,11 @@ o_beta_rsq <- function(y, x, con, m = "none", w = NULL, id = "none", time = "non
 #' @title Visualization of beta*s over a range of maximum R-squares
 #'
 #' @description Estimates and visualizes beta*s, i.e., the bias-adjusted treatment effects (or correlations) (following Oster 2019) over a range of maximum R-squares.
-#' @usage o_beta_rsq_viz(y, x, con, m = "none", w = NULL, id = "none", time = "none", delta = 1,
+#' @usage o_beta_rsq_viz(y, x, con, w = NULL, id = "none", time = "none", delta = 1,
 #' type, data)
 #' @param y Name of the dependent variable (as string).
 #' @param x Name of the independent treatment variable (i.e., variable of interest; as string).
 #' @param con Name of related control variables. Provided as string in the format: "w + z +...".
-#' @param m Name of unrelated control variables (m; see Oster 2019; as string; default is m = "none").
 #' @param w weights (only for weighted estimations). Warning: For weighted panel models R can report different R-square than Stata, leading deviation between R and Stata results.
 #' @param id Name of the individual id variable (e.g. firm or farm; as string). Only applicable for fixed effect panel models.
 #' @param time Name of the time id variable (e.g. year or month; as string). Only applicable for fixed effect panel models.
@@ -457,12 +437,12 @@ o_beta_rsq <- function(y, x, con, m = "none", w = NULL, id = "none", time = "non
 #' @export
 
 
-o_beta_rsq_viz <- function(y, x, con, m = "none", w = NULL, id = "none", time = "none", delta = 1, type, data) {
+o_beta_rsq_viz <- function(y, x, con, w = NULL, id = "none", time = "none", delta = 1, type, data) {
 
 
 
   # call o_beta_rsq
-  beta_over_rsq_results <- o_beta_rsq(y = y, x = x, con = con, m = m, id = id, time = time, delta = delta, type = type, data = data)
+  beta_over_rsq_results <- o_beta_rsq(y = y, x = x, con = con, id = id, time = time, delta = delta, type = type, data = data)
 
 
 
@@ -494,12 +474,11 @@ o_beta_rsq_viz <- function(y, x, con, m = "none", w = NULL, id = "none", time = 
 #' @title Bootstrapped beta*s
 #'
 #' @description Estimates bootstrapped beta*s, i.e., the bias-adjusted treatment effects (or correlations) (following Oster 2019).
-#' @usage o_beta_boot(y, x, con, m = "none", w = NULL, id = "none", time = "none", delta = 1,
+#' @usage o_beta_boot(y, x, con, w = NULL, id = "none", time = "none", delta = 1,
 #' R2max, sim, obs, rep, type, useed = NA, data)
 #' @param y Name of the dependent variable (as string).
 #' @param x Name of the independent treatment variable (i.e., variable of interest; as string).
 #' @param con Name of related control variables. Provided as string in the format: "w + z +...".
-#' @param m Name of unrelated control variables (m; see Oster 2019; as string; default is m = "none").
 #' @param w weights (only for weighted estimations). Warning: For weighted panel models R can report different R-square than Stata, leading deviation between R and Stata results.
 #' @param id Name of the individual id variable (e.g. firm or farm; as string). Only applicable for fixed effect panel models.
 #' @param time Name of the time id variable (e.g. year or month; as string). Only applicable for fixed effect panel models.
@@ -541,7 +520,7 @@ o_beta_rsq_viz <- function(y, x, con, m = "none", w = NULL, id = "none", time = 
 
 
 
-o_beta_boot <- function(y, x, con, m = "none", w = NULL, id = "none", time = "none", delta = 1, R2max, sim, obs, rep, type, useed = NA, data) {
+o_beta_boot <- function(y, x, con, w = NULL, id = "none", time = "none", delta = 1, R2max, sim, obs, rep, type, useed = NA, data) {
 
 
 
@@ -562,10 +541,7 @@ o_beta_boot <- function(y, x, con, m = "none", w = NULL, id = "none", time = "no
     data_plm_aux <- pdata.frame(data_aux, index=c("id_var","time_var"), drop.index=TRUE, row.names=TRUE)}
 
   ## define uncontrolled model
-  ### models without variables m
-  if(m == "none"){model1_formula    <- as.formula(paste("y_var ~ x_var +",con)) } else { # controlled model
-  ### models with
-    model1_formula    <- as.formula(paste("y_var ~ x_var +",con, "+", m)) }              # controlled model
+  model1_formula    <- as.formula(paste("y_var ~ x_var +",con))
 
   ## run model
   ### lm
@@ -599,7 +575,7 @@ o_beta_boot <- function(y, x, con, m = "none", w = NULL, id = "none", time = "no
 
 
     # call o_delta function
-    beta_results_aux <- o_beta(y = y, x = x, con = con, m = m, id = id, time = time,
+    beta_results_aux <- o_beta(y = y, x = x, con = con, id = id, time = time,
                                delta = delta, R2max = R2max, type = type, data = data_current)
 
     # store results
@@ -630,13 +606,12 @@ o_beta_boot <- function(y, x, con, m = "none", w = NULL, id = "none", time = "no
 #' @title Visualization of bootstrapped beta*s
 #'
 #' @description Estimates and visualizes bootstrapped beta*s, i.e., the bias-adjusted treatment effects (or correlations) (following Oster 2019).
-#' @usage o_beta_boot_viz(y, x, con, m = "none", w = NULL, id = "none", time = "none",
+#' @usage o_beta_boot_viz(y, x, con, w = NULL, id = "none", time = "none",
 #' delta = 1, R2max, sim, obs, rep, CI, type, norm = TRUE, bin,
 #' col = c("#08306b","#4292c6","#c6dbef"), nL = TRUE, mL = TRUE, useed = NA, data)
 #' @param y Name of the dependent variable (as string).
 #' @param x Name of the independent treatment variable (i.e., variable of interest; as string).
 #' @param con Name of related control variables. Provided as string in the format: "w + z +...".
-#' @param m Name of unrelated control variables (m; see Oster 2019; as string; default is m = "none").
 #' @param w weights (only for weighted estimations). Warning: For weighted panel models R can report different R-square than Stata, leading deviation between R and Stata results.
 #' @param id Name of the individual id variable (e.g. firm or farm; as string). Only applicable for fixed effect panel models.
 #' @param time Name of the time id variable (e.g. year or month; as string). Only applicable for fixed effect panel models.
@@ -686,11 +661,11 @@ o_beta_boot <- function(y, x, con, m = "none", w = NULL, id = "none", time = "no
 #' @export
 
 
-o_beta_boot_viz <- function(y, x, con, m = "none", w = NULL, id = "none", time = "none", delta = 1, R2max, sim, obs, rep, CI, type, norm = TRUE, bin, col = c("#08306b","#4292c6","#c6dbef"), nL = TRUE, mL = TRUE, useed = NA, data) {
+o_beta_boot_viz <- function(y, x, con, w = NULL, id = "none", time = "none", delta = 1, R2max, sim, obs, rep, CI, type, norm = TRUE, bin, col = c("#08306b","#4292c6","#c6dbef"), nL = TRUE, mL = TRUE, useed = NA, data) {
 
 
   # call o_beta_boot function and store results
-  simulation_results <- o_beta_boot(y = y, x = x, con = con, m = m, id = id, time = time, delta = delta, R2max = R2max,
+  simulation_results <- o_beta_boot(y = y, x = x, con = con, id = id, time = time, delta = delta, R2max = R2max,
                                     sim = sim, obs = obs, rep = rep, type = type, useed = useed, data = data)
   simulation_results <- simulation_results %>% dplyr::rename("beta" = 2) # rename variable
 
@@ -769,12 +744,11 @@ o_beta_boot_viz <- function(y, x, con, m = "none", w = NULL, id = "none", time =
 #' @title Bootstrapped mean beta* and confidence intervals
 #'
 #' @description Provides the mean and confidence intervals of estimated bootstrapped beta*s, i.e., the bias-adjusted treatment effects (or correlations) (following Oster 2019).
-#' @usage o_beta_boot_inf(y, x, con, m = "none", w = NULL, id = "none", time = "none",
+#' @usage o_beta_boot_inf(y, x, con, w = NULL, id = "none", time = "none",
 #' delta = 1, R2max, sim, obs, rep, CI, type, useed = NA, data)
 #' @param y Name of the dependent variable (as string).
 #' @param x Name of the independent treatment variable (i.e., variable of interest; as string).
 #' @param con Name of related control variables. Provided as string in the format: "w + z +...".
-#' @param m Name of unrelated control variables (m; see Oster 2019; as string; default is m = "none").
 #' @param w weights (only for weighted estimations). Warning: For weighted panel models R can report different R-square than Stata, leading deviation between R and Stata results.
 #' @param id Name of the individual id variable (e.g. firm or farm; as string). Only applicable for fixed effect panel models.
 #' @param time Name of the time id variable (e.g. year or month; as string). Only applicable for fixed effect panel models.
@@ -817,11 +791,11 @@ o_beta_boot_viz <- function(y, x, con, m = "none", w = NULL, id = "none", time =
 #' @export
 
 
-o_beta_boot_inf <- function(y, x, con, m = "none", w = NULL, id = "none", time = "none", delta = 1, R2max, sim, obs, rep, CI, type, useed = NA, data) {
+o_beta_boot_inf <- function(y, x, con, w = NULL, id = "none", time = "none", delta = 1, R2max, sim, obs, rep, CI, type, useed = NA, data) {
 
 
   # call o_beta_boot function and store results
-  simulation_results <- o_beta_boot(y = y, x = x, con = con, m = m, id = id, time = time, delta = delta, R2max = R2max,
+  simulation_results <- o_beta_boot(y = y, x = x, con = con, id = id, time = time, delta = delta, R2max = R2max,
                                     sim = sim, obs = obs, rep = rep, type = type, useed = useed, data = data)
   simulation_results <- simulation_results %>% dplyr::rename("beta" = 2) # rename variable
 
@@ -886,13 +860,12 @@ o_beta_boot_inf <- function(y, x, con, m = "none", w = NULL, id = "none", time =
 ##################--------------------------------------------------------------
 #' @title delta*
 #'
-#' @description Estimates delta*, i.e., the degree of selection on unobservables relative to observables (with respect to the treatment variable) that would be necessary to eliminate the result (following Oster 2019).
-#' @usage o_delta(y, x, con, m = "none", w = NULL, id = "none", time = "none", beta = 0, R2max,
+#' @description Estimates delta*, i.e., the degree of selection on unobservables relative to observables (with respect to the treatment variable) that would be necessary to eliminate the result (following Oster 2019). The code is based on the psacalc command in Stata.
+#' @usage o_delta(y, x, con, w = NULL, id = "none", time = "none", beta = 0, R2max,
 #' type, data)
 #' @param y Name of the dependent variable (as string).
 #' @param x Name of the independent treatment variable (i.e., variable of interest; as string).
 #' @param con Name of related control variables. Provided as string in the format: "w + z +...".
-#' @param m Name of unrelated control variables (m; see Oster 2019; as string; default is m = "none").
 #' @param w weights (only for weighted estimations). Warning: For weighted panel models R can report different R-square than Stata, leading deviation between R and Stata results.
 #' @param id Name of the individual id variable (e.g. firm or farm; as string). Only applicable for fixed effect panel models.
 #' @param time Name of the time id variable (e.g. year or month; as string). Only applicable for fixed effect panel models.
@@ -924,7 +897,7 @@ o_beta_boot_inf <- function(y, x, con, m = "none", w = NULL, id = "none", time =
 #'         data = data_oster)   # dataset
 #' @export
 
-o_delta <- function(y, x, con, m = "none", w = NULL, id = "none", time = "none", beta = 0, R2max, type, data) {
+o_delta <- function(y, x, con, w = NULL, id = "none", time = "none", beta = 0, R2max, type, data) {
 
 
   # rename variables and create, if type is plm, a panel dataset
@@ -942,23 +915,10 @@ o_delta <- function(y, x, con, m = "none", w = NULL, id = "none", time = "none",
 
 
   # define formulas of the different models
-  ## models without variables m
-  if(m == "none"){
     model0_formula    <- as.formula("y_var ~ x_var")                                            # uncontrolled model
     model1_formula    <- as.formula(paste("y_var ~ x_var +",con))                               # controlled model
     aux_model_formula <- as.formula(paste("x_var ~",con))                                       # auxiliary model
     if (type == "plm") { sigma_xx_model_formula <- as.formula(paste("x_var ~ factor(id_var)"))} # define model to compute sigma_xx when model type is plm
-  } else {
-    ## models with variables m
-    model0_formula    <- as.formula(paste("y_var ~ x_var +", m))                 # uncontrolled model
-    model1_formula    <- as.formula(paste("y_var ~ x_var +",con, "+", m))        # controlled model
-    aux_model_formula <- as.formula(paste("x_var ~",con, "+", m))                # auxiliary model
-    if (type == "lm") {
-      sigma_xx_model_formula <- as.formula(paste("x_var ~ ",m))}                 # if lm model: model to obtain sigma_xx with m
-    if (type == "plm") {
-      sigma_xx_model_formula <- as.formula(paste("x_var ~ factor(id_var) +",m))} # if plm model: model to obtain sigma_xx with m
-  }
-
 
 
   # run models
@@ -967,7 +927,6 @@ o_delta <- function(y, x, con, m = "none", w = NULL, id = "none", time = "none",
     model0    <- lm(model0_formula, weights = w_var,    data = data, na.action = na.exclude)                          # run uncontrolled model
     model1    <- lm(model1_formula, weights = w_var,    data = data, na.action = na.exclude)                          # run controlled model
     aux_model <- lm(aux_model_formula, weights = w_var, data = data, na.action = na.exclude)                          # run auxiliary model
-    if(m != "none") {model_xx  <-  lm(sigma_xx_model_formula, weights = w_var, data = data, na.action = na.exclude)}  # run model to obtain singa_xx
   }
   ## plm
   if (type == "plm") {
@@ -984,9 +943,8 @@ o_delta <- function(y, x, con, m = "none", w = NULL, id = "none", time = "none",
   if (type == "lm") {R20 = summary(model0)$r.squared} else if (type == "plm") {R20 = as.numeric(summary(model0)$r.squared[1])}  # R-square uncontrolled model
   if (type == "lm") {R21 = summary(model1)$r.squared} else if (type == "plm") {R21 = as.numeric(summary(model1)$r.squared[1])}  # R-square uncontrolled model
   sigma_yy = var(data$y_var, na.rm = T)                                                                                         # variance of dependent variable
-  if(m == "none"){
-    if (type == "lm") {sigma_xx = var(data$x_var, na.rm = T)} else if (type == "plm") {sigma_xx =  var(model_xx$residuals)} } else {      # variance of independent variable
-      if (type == "lm") {sigma_xx = var(model_xx$residuals)} else if (type == "plm") {sigma_xx =  var(model_xx$residuals)}  }             # variance of independent variable
+
+    if (type == "lm") {sigma_xx = var(data$x_var, na.rm = T)} else if (type == "plm") {sigma_xx =  var(model_xx$residuals)}    # variance of independent variable
   t_x  = var(aux_model$residuals)
 
 
@@ -1045,12 +1003,11 @@ o_delta <- function(y, x, con, m = "none", w = NULL, id = "none", time = "none",
 ##################--------------------------------------------------------------
 #' @title delta*s over a range of maximum R-squares
 #' @description Estimates delta*s, i.e., the degree of selection on unobservables relative to observables (with respect to the treatment variable) that would be necessary to eliminate the result (following Oster 2019) over a range of maximum R-squares following Oster (2019).
-#' @usage o_delta_rsq(y, x, con, m = "none", w = NULL, id = "none", time = "none", beta = 0,
+#' @usage o_delta_rsq(y, x, con, w = NULL, id = "none", time = "none", beta = 0,
 #' type, data)
 #' @param y Name of the dependent variable (as string).
 #' @param x Name of the independent treatment variable (i.e., variable of interest; as string).
 #' @param con Name of related control variables. Provided as string in the format: "w + z +...".
-#' @param m Name of unrelated control variables (m; see Oster 2019; as string; default is m = "none").
 #' @param w weights (only for weighted estimations). Warning: For weighted panel models R can report different R-square than Stata, leading deviation between R and Stata results.
 #' @param id Name of the individual id variable (e.g. firm or farm; as string). Only applicable for fixed effect panel models.
 #' @param time Name of the time id variable (e.g. year or month; as string). Only applicable for fixed effect panel models.
@@ -1080,7 +1037,7 @@ o_delta <- function(y, x, con, m = "none", w = NULL, id = "none", time = "none",
 #'             data = data_oster)   # dataset
 #' @export
 
-o_delta_rsq <- function(y, x, con, m = "none", w = NULL, id = "none", time = "none", beta = 0, type, data) {
+o_delta_rsq <- function(y, x, con, w = NULL, id = "none", time = "none", beta = 0, type, data) {
 
 
   # first define R-square of uncontrolled model
@@ -1098,10 +1055,7 @@ o_delta_rsq <- function(y, x, con, m = "none", w = NULL, id = "none", time = "no
     data_plm_aux <- pdata.frame(data_aux, index=c("id_var","time_var"), drop.index=TRUE, row.names=TRUE)}
 
   ## define uncontrolled model
-  ### models without variables m
-  if(m == "none"){model1_formula    <- as.formula(paste("y_var ~ x_var +",con)) } else { # controlled model
-  ### models with variables m
-    model1_formula    <- as.formula(paste("y_var ~ x_var +",con, "+", m)) }              # controlled model
+  model1_formula    <- as.formula(paste("y_var ~ x_var +",con))
 
   ## run model
   ### lm
@@ -1125,7 +1079,7 @@ o_delta_rsq <- function(y, x, con, m = "none", w = NULL, id = "none", time = "no
     R2max = seq(r_start:1,by = 0.01)[i] # current max R-square
 
     # call o_delta function and store results
-    delta_results_aux <- o_delta(y = y, x = x, con = con, m = m, id = id, time = time, beta = beta, R2max = R2max, type = type, data = data)
+    delta_results_aux <- o_delta(y = y, x = x, con = con, id = id, time = time, beta = beta, R2max = R2max, type = type, data = data)
 
     # store results
     delta_over_rsq_results[i,2] <- R2max
@@ -1146,12 +1100,11 @@ o_delta_rsq <- function(y, x, con, m = "none", w = NULL, id = "none", time = "no
 #' @title Visualization of delta*s over a range of maximum R-squares
 #'
 #' @description Estimates and visualizes delta*s, i.e., the degree of selection on unobservables relative to observables (with respect to the treatment variable) that would be necessary to eliminate the result (following Oster 2019) over a range of maximum R-squares.
-#' @usage o_delta_rsq_viz(y, x, con, m = "none", w = NULL, id = "none", time = "none", beta = 0,
+#' @usage o_delta_rsq_viz(y, x, con, w = NULL, id = "none", time = "none", beta = 0,
 #' type, data)
 #' @param y Name of the dependent variable (as string).
 #' @param x Name of the independent treatment variable (i.e., variable of interest; as string).
 #' @param con Name of related control variables. Provided as string in the format: "w + z +...".
-#' @param m Name of unrelated control variables (m; see Oster 2019; as string; default is m = "none").
 #' @param w weights (only for weighted estimations). Warning: For weighted panel models R can report different R-square than Stata, leading deviation between R and Stata results.
 #' @param id Name of the individual id variable (e.g. firm or farm; as string). Only applicable for fixed effect panel models.
 #' @param time Name of the time id variable (e.g. year or month; as string). Only applicable for fixed effect panel models.
@@ -1181,7 +1134,7 @@ o_delta_rsq <- function(y, x, con, m = "none", w = NULL, id = "none", time = "no
 #'                 data = data_oster)   # dataset
 #' @export
 
-o_delta_rsq_viz <- function(y, x, con, m = "none", w = NULL, id = "none", time = "none", beta = 0, type, data) {
+o_delta_rsq_viz <- function(y, x, con, w = NULL, id = "none", time = "none", beta = 0, type, data) {
 
 
   # first define R-square of uncontrolled model
@@ -1199,10 +1152,7 @@ o_delta_rsq_viz <- function(y, x, con, m = "none", w = NULL, id = "none", time =
     data_plm_aux <- pdata.frame(data_aux, index=c("id_var","time_var"), drop.index=TRUE, row.names=TRUE)}
 
   ## define uncontrolled model
-  ### models without variables m
-  if(m == "none"){model1_formula    <- as.formula(paste("y_var ~ x_var +",con)) } else { # controlled model
-  ### models with variables m
-    model1_formula    <- as.formula(paste("y_var ~ x_var +",con, "+", m)) }              # controlled model
+  model1_formula    <- as.formula(paste("y_var ~ x_var +",con))
 
   ## run model
   ### lm
@@ -1229,7 +1179,7 @@ o_delta_rsq_viz <- function(y, x, con, m = "none", w = NULL, id = "none", time =
     R2max = seq(r_start:1,by = 0.01)[i] # current max R-square
 
     # call o_delta function
-    delta_results_aux <- o_delta(y = y, x = x, con = con, m = m, id = id, time = time, beta = beta, R2max = R2max, type = type, data = data)
+    delta_results_aux <- o_delta(y = y, x = x, con = con, id = id, time = time, beta = beta, R2max = R2max, type = type, data = data)
 
     # store results
     delta_over_rsq_results[i,2] <- R2max
@@ -1259,12 +1209,11 @@ o_delta_rsq_viz <- function(y, x, con, m = "none", w = NULL, id = "none", time =
 #' @title Bootstrapped delta*s
 #'
 #' @description Estimates bootstrapped delta*s, i.e., the degree of selection on unobservables relative to observables (with respect to the treatment variable) that would be necessary to eliminate the result (following Oster 2019).
-#' @usage o_delta_boot(y, x, con, m = "none", w = NULL, id = "none", time = "none", beta = 0, R2max,
+#' @usage o_delta_boot(y, x, con, w = NULL, id = "none", time = "none", beta = 0, R2max,
 #' sim, obs, rep, type, useed = NA, data)
 #' @param y Name of the dependent variable (as string).
 #' @param x Name of the independent treatment variable (i.e., variable of interest; as string).
 #' @param con Name of related control variables. Provided as string in the format: "w + z +...".
-#' @param m Name of unrelated control variables (m; see Oster 2019; as string; default is m = "none").
 #' @param w weights (only for weighted estimations). Warning: For weighted panel models R can report different R-square than Stata, leading deviation between R and Stata results.
 #' @param id Name of the individual id variable (e.g. firm or farm; as string). Only applicable for fixed effect panel models.
 #' @param time Name of the time id variable (e.g. year or month; as string). Only applicable for fixed effect panel models.
@@ -1304,7 +1253,7 @@ o_delta_rsq_viz <- function(y, x, con, m = "none", w = NULL, id = "none", time =
 #'              data = data_oster)  # dataset
 #' @export
 
-o_delta_boot <- function(y, x, con, m = "none", w = NULL, id = "none", time = "none", beta = 0, R2max, sim, obs, rep, type, useed = NA, data) {
+o_delta_boot <- function(y, x, con, w = NULL, id = "none", time = "none", beta = 0, R2max, sim, obs, rep, type, useed = NA, data) {
 
 
   # first define R-square of uncontrolled model
@@ -1322,10 +1271,7 @@ o_delta_boot <- function(y, x, con, m = "none", w = NULL, id = "none", time = "n
     data_plm_aux <- pdata.frame(data_aux, index=c("id_var","time_var"), drop.index=TRUE, row.names=TRUE)}
 
   ## define uncontrolled model
-  ### models without variables m
-  if(m == "none"){model1_formula    <- as.formula(paste("y_var ~ x_var +",con)) } else { # controlled model
-  ### models with
-    model1_formula    <- as.formula(paste("y_var ~ x_var +",con, "+", m)) }              # controlled model
+  model1_formula    <- as.formula(paste("y_var ~ x_var +",con))
 
   ## run model
   ### lm
@@ -1360,7 +1306,7 @@ o_delta_boot <- function(y, x, con, m = "none", w = NULL, id = "none", time = "n
 
 
     # call o_delta function
-    delta_results_aux <- o_delta(y = y, x = x, con = con, m = m, id = id, time = time, beta = beta, R2max = R2max, type = type, data = data_current)
+    delta_results_aux <- o_delta(y = y, x = x, con = con, id = id, time = time, beta = beta, R2max = R2max, type = type, data = data_current)
 
 
     # store results
@@ -1391,13 +1337,12 @@ o_delta_boot <- function(y, x, con, m = "none", w = NULL, id = "none", time = "n
 #' @title  Visualization of bootstrapped delta*s
 #'
 #' @description Estimates and visualizes bootstrapped delta*s, i.e., the degree of selection on unobservables relative to observables (with respect to the treatment variable) that would be necessary to eliminate the result (following Oster 2019).
-#' @usage o_delta_boot_viz(y, x, con, m = "none", w = NULL, id = "none", time = "none",
+#' @usage o_delta_boot_viz(y, x, con, w = NULL, id = "none", time = "none",
 #' beta = 0, R2max, sim, obs, rep, CI, type, norm = TRUE, bin,
 #' col = c("#08306b","#4292c6","#c6dbef"), nL = TRUE, mL = TRUE, useed = NA, data)
 #' @param y Name of the dependent variable (as string).
 #' @param x Name of the independent treatment variable (i.e., variable of interest; as string).
 #' @param con Name of related control variables. Provided as string in the format: "w + z +...".
-#' @param m Name of unrelated control variables (m; see Oster 2019; as string; default is m = "none").
 #' @param w weights (only for weighted estimations). Warning: For weighted panel models R can report different R-square than Stata, leading deviation between R and Stata results.
 #' @param id Name of the individual id variable (e.g. firm or farm; as string). Only applicable for fixed effect panel models.
 #' @param time Name of the time id variable (e.g. year or month; as string). Only applicable for fixed effect panel models.
@@ -1447,10 +1392,10 @@ o_delta_boot <- function(y, x, con, m = "none", w = NULL, id = "none", time = "n
 #' @export
 
 
-o_delta_boot_viz <- function(y, x, con, m = "none", w = NULL, id = "none", time = "none", beta = 0, R2max, sim, obs, rep, CI, type, norm = TRUE, bin, col = c("#08306b","#4292c6","#c6dbef"), nL = TRUE, mL = TRUE, useed = NA, data) {
+o_delta_boot_viz <- function(y, x, con, w = NULL, id = "none", time = "none", beta = 0, R2max, sim, obs, rep, CI, type, norm = TRUE, bin, col = c("#08306b","#4292c6","#c6dbef"), nL = TRUE, mL = TRUE, useed = NA, data) {
 
   # call function o_delta_boot and store results
-  simulation_results <- o_delta_boot(y = y, x = x, con = con, m = m, id = id, time = time, beta = beta, R2max = R2max,
+  simulation_results <- o_delta_boot(y = y, x = x, con = con, id = id, time = time, beta = beta, R2max = R2max,
                                      sim = sim, obs = obs, rep = rep, type = type, useed = useed, data = data)
   simulation_results <- simulation_results %>% dplyr::rename("delta" = 2) # rename variable
 
@@ -1520,12 +1465,11 @@ o_delta_boot_viz <- function(y, x, con, m = "none", w = NULL, id = "none", time 
 #' @title Bootstrapped mean delta* and confidence intervals
 #'
 #' @description Provides the mean and confidence intervals of bootstrapped delta*s, i.e., the degree of selection on unobservables relative to observables (with respect to the treatment variable) that would be necessary to eliminate the result (following Oster 2019).
-#' @usage o_delta_boot_inf(y, x, con, m = "none", w = NULL, id = "none", time = "none",
+#' @usage o_delta_boot_inf(y, x, con, w = NULL, id = "none", time = "none",
 #' beta = 0, R2max, sim, obs, rep, CI, type, useed = NA, data)
 #' @param y Name of the dependent variable (as string).
 #' @param x Name of the independent treatment variable (i.e., variable of interest; as string).
 #' @param con Name of related control variables. Provided as string in the format: "w + z +...".
-#' @param m Name of unrelated control variables (m; see Oster 2019; as string; default is m = "none").
 #' @param w weights (only for weighted estimations). Warning: For weighted panel models R can report different R-square than Stata, leading deviation between R and Stata results.
 #' @param id Name of the individual id variable (e.g. firm or farm; as string). Only applicable for fixed effect panel models.
 #' @param time Name of the time id variable (e.g. year or month; as string). Only applicable for fixed effect panel models.
@@ -1568,10 +1512,10 @@ o_delta_boot_viz <- function(y, x, con, m = "none", w = NULL, id = "none", time 
 #' @export
 
 
-o_delta_boot_inf <- function(y, x, con, m = "none", w = NULL, id = "none", time = "none", beta = 0, R2max, sim, obs, rep, CI, type, useed = NA, data) {
+o_delta_boot_inf <- function(y, x, con, w = NULL, id = "none", time = "none", beta = 0, R2max, sim, obs, rep, CI, type, useed = NA, data) {
 
   # call function o_delta_boot and store results
-  simulation_results <- o_delta_boot(y = y, x = x, con = con, m = m, id = id, time = time, beta = beta, R2max = R2max,
+  simulation_results <- o_delta_boot(y = y, x = x, con = con, id = id, time = time, beta = beta, R2max = R2max,
                                      sim = sim, obs = obs, rep = rep, type = type, useed = useed, data = data)
   simulation_results <- simulation_results %>% dplyr::rename("delta" = 2) # rename variable
 
